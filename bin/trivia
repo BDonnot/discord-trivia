@@ -1,0 +1,73 @@
+#!/usr/bin/python3
+
+"""Cathy.
+
+Discord chat bot using AIML artificial intelligence
+
+Usage:
+  cathy <channel> <token>
+
+Options:
+  <channel>     Name of channel to chat in
+  <token>       Bot's Discord API token
+  -h --help     Show this screen.
+"""
+
+import os
+import json
+
+from docopt import docopt
+from trivia.trivia import Trivia
+
+import asyncio
+import time
+# args = docopt(__doc__)
+if not os.path.exists("trivia_auth.json"):
+    raise RuntimeError("File auth.json not found, unable to  find Bot's Discord API token") 
+with open("trivia_auth.json", "r") as f:
+    dict_ = json.load(f)
+
+print('Channel: ', dict_['channel'])
+print('Token: ', dict_['token'])
+
+# TODO check that to set prod, beta or
+# from pygit2 import Repository
+# this_branch = Repository('.').head.shorthand  # 'master'
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--prod", default="", required=False)
+parser.add_argument("-b", "--beta", default="", required=False)
+parser.add_argument("-t", "--test", default="", required=False)
+parser.parse_args()
+
+from git import Repo
+repo = Repo(".")
+this_branch = str(repo.active_branch)
+
+if this_branch == "master":
+    readyness_level = "prod"
+elif this_branch == "beta":
+    readyness_level = "beta"
+else:
+    readyness_level="test"
+
+print("Launching the bot in \"{}\" mode.".format(readyness_level))
+reboot_message = None
+last_message_posted = None
+
+while True:
+    bot = Trivia(dict_['token'], readyness_level=readyness_level,
+                  reboot_message=reboot_message, last_message_posted=last_message_posted
+                 )
+    bot.run()
+    reboot_message, last_message_posted, kill_ = bot.get_messages()
+    del bot
+    if kill_:
+        break
+
+    if asyncio.get_event_loop().is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    time.sleep(5)

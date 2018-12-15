@@ -6,7 +6,7 @@ import asyncio
 import numpy as np
 from karadoc import Funct
 
-from .Cards import Cards, A, B, C, emojis
+from .Cards import Card, A, B, C, emojis, EASY, HARD
 # from .DiscordHelper import DiscordHelper
 
 # from .Packs import PackHandler, Pack
@@ -58,6 +58,8 @@ class FunctTrivia(Funct):
         # self._set_only_vip()
         self._register_fun(prefix="test", fun=self._display,
                            desc="Just display a test")
+        self._register_fun(prefix="add", fun=self._newcard,
+                           desc="Add a new card")
         # self._register_fun(prefix="search", fun=self._search,
         #                    desc="Search a speficic pack")
         #
@@ -67,18 +69,86 @@ class FunctTrivia(Funct):
         #                    desc="Add a single pack, and broadcast it")
 
     async def _display(self, message, msg_str, cmd) -> None:
-        cards = Cards(message.author.id,
+        card = Card(message.author.id,
                       "Where is test ?",
                       "Not here",
                       "Here",
                       "Not there",
-                      ans_correct=B)
-        emb = self.embed_from_dict(cards.dict_embed())
+                      ans_correct=B,
+                      difficulty=EASY,
+                      season=0)
+        emb = self.embed_from_dict(card.dict_embed())
         msg_check = await self.discord_client.send_message(message.channel, embed=emb)
         msg_check = msg_check[-1]
 
         for id_em in sorted(emojis.keys()):
             await self.discord_client.add_reaction(msg_check, emojis[id_em])
+
+    async def _newcard(self, message, msg_str, cmd) -> None:
+        await self.discord_client.send_message(message.channel, "You ask to enter a new cards, please check your dm")
+        await self.discord_client.send_message(message.author, "Please provide the question")
+        question = await self.discord_client.wait_for_message(author=message.author)
+        await self.discord_client.send_message(message.author, "Please provide the possible answer a")
+        ans_a = await self.discord_client.wait_for_message(author=message.author)
+        await self.discord_client.send_message(message.author, "Please provide the possible answer b")
+        ans_b = await self.discord_client.wait_for_message(author=message.author)
+        await self.discord_client.send_message(message.author, "Please provide the possible answer c")
+        ans_c = await self.discord_client.wait_for_message(author=message.author)
+        await self.discord_client.send_message(message.author, "What is the correct answer (a, b or c)")
+        ans_correct = await self.discord_client.wait_for_message(author=message.author)
+
+        season_set = False
+        season = 0
+        while not season_set:
+            await self.discord_client.send_message(message.author, "What is the season?")
+            season = await self.discord_client.wait_for_message(author=message.author)
+            try:
+                season = int(season.content)
+                season_set = True
+            except Exception as e:
+                print(e)
+                await self.discord_client.send_message(message.author, "Please enter a valid integer")
+
+        difficulty_set = False
+        difficulty = EASY
+        while not difficulty_set:
+            await self.discord_client.send_message(message.author, "What is the difficulty (easy / hard)?")
+            difficulty = await self.discord_client.wait_for_message(author=message.author)
+            difficulty = difficulty.content
+            if difficulty[:2] == "ea":
+                difficulty_set = True
+                difficulty = EASY
+            elif difficulty[:2] == "ha":
+                difficulty_set = True
+                difficulty = HARD
+            else:
+                await self.discord_client.send_message(message.author, "Please enter easy/hard")
+
+        card = Card(id_player=message.author.id,
+                    question=question.content,
+                    ans_a=ans_a.content,
+                    ans_b=ans_b.content,
+                    ans_c=ans_c.content,
+                    ans_correct=ans_correct.content,
+                    season=season,
+                    difficulty=difficulty)
+        emb = self.embed_from_dict(card.dict_embed())
+        message_card = await self.discord_client.send_message(message.author, embed=emb)
+        message_card = message_card[-1]
+        await self.discord_client.send_message(message.author, "Answer is {}".format(ans_correct.content))
+        await self.discord_client.send_message(message.author, "Is this correct?")
+        while 1:
+            ok_ = await self._check_if_ok(orig_message=message)
+            if ok_ is not None:
+                break
+        if ok_:
+            card.save_mongo(database=self.database.cards)
+            await self.discord_client.send_message(message.author, "Sucessfully added the card")
+            await self.discord_client.add_reaction(message_card, "✅")  # point_up_2d
+        else:
+            await self.discord_client.send_message(message.author, "Card removed")
+            await self.discord_client.add_reaction(message_card, "❌")  # point_up_2d
+        # await self.discord_client.add_reaction(message, "❌")  # point_up_2d
 
     # base functions
     async def _packlist(self, message, msg_str, cmd) -> None:

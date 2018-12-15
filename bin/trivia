@@ -23,7 +23,7 @@ import asyncio
 import time
 # args = docopt(__doc__)
 if not os.path.exists("trivia_auth.json"):
-    raise RuntimeError("File auth.json not found, unable to  find Bot's Discord API token") 
+    raise RuntimeError("File trivia_auth.json not found, unable to  find Bot's Discord API token")
 with open("trivia_auth.json", "r") as f:
     dict_ = json.load(f)
 

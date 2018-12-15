@@ -107,3 +107,13 @@ venv.bak/
 
 # pycharm
 .idea/
+
+
+
+#venv
+myenv/
+.Rhistory
+trivia/lib64
+trivia/pyvenv.cfg
+trivia_auth.json
+trivia/bin/

@@ -6,6 +6,7 @@ import asyncio
 import numpy as np
 from karadoc import Funct
 
+from .Cards import Cards, A, B, C, emojis
 # from .DiscordHelper import DiscordHelper
 
 # from .Packs import PackHandler, Pack
@@ -13,7 +14,7 @@ from karadoc import Funct
 
 import pdb
 
-class PackFunct(Funct):
+class FunctTrivia(Funct):
     pack_list_dict = {
         "title": "**GOTCTips** Pack List",
         "description": "Below you can find a list of all active $99.99 packs stored by us.\nThe list is sorted by \"**{}**\".\nFor more information please read `!gt-pack help`.",
@@ -40,65 +41,12 @@ class PackFunct(Funct):
         "text": "GOTCTips - Your best source for tips, news and guides about Game of Thrones Conquest!"
             }
             }
-    pack_selected = {
-                "title": "**GOTCTips** Pack Search",
-                "description": "You searched for: __**{}**__\nand selected\n{} {:,.0f} - {}",  # SEARCH TERM, emoji, TOTAL VALUE, NAME OF SELECTION
-                "color": 14090240,
-                "fields": [ {
-                    "name": "{}", #name
-                    "value": "{}\n_ _", #content
-                "inline": False
-                  },{
-                    "name":"Join us on Discord",
-                    "value": "[GOTCTips Discord Server](https://discord.gg/gCVq9nW)",
-                    "inline": True
-                },
-                {
-                    "name": "Visit our Blog",
-                    "value": "[GOTCTips Blog](https://gotctips.com)",
-                    "inline": True
-                } ],
-                "thumbnail": {
-                  "url": "http://gotctips.com/wp-content/uploads/2018/10/gotctips-discord-pack2.png"
-                },
-                "footer": {
-                  "icon_url": "http://gotctips.com/wp-content/uploads/2018/06/favicon.png",
-                  "text": "GOTCTips - Your best source for tips, news and guides about Game of Thrones Conquest!"
-                }
-    }
-    pack_search_list_dict = {
-                "title": "**GOTCTips** Pack Search",
-                "description": "You searched for: __**{}**__\nSorted by \"**{}**\".\nBelow you can find a list of all packs matching your search term.\nFor more information please read `!gt-pack help`.", #search term
-                "color": 14090240,
-                "fields": [{
-                    "name": "Search Results",
-                    "value": "{} *{:,.0f}* - {}", # emoji, total value, name
-                    "inline": False
-                  },{
-                    "name":"Join us on Discord",
-                    "value": "[GOTCTips Discord Server](https://discord.gg/gCVq9nW)",
-                    "inline": True
-                },
-                {
-                    "name": "Visit our Blog",
-                    "value": "[GOTCTips Blog](https://gotctips.com)",
-                    "inline": True
-                }],
-                "thumbnail": {
-                  "url": "http://gotctips.com/wp-content/uploads/2018/10/gotctips-discord-pack2.png"
-                },
-                "footer": {
-                  "icon_url": "http://gotctips.com/wp-content/uploads/2018/06/favicon.png",
-                  "text": "GOTCTips - Your best source for tips, news and guides about Game of Thrones Conquest!"
-                }
-        }
 
-    def __init__(self, discord_client, database, game_data, bot_prefix, name_func, permission):
+    def __init__(self, discord_client, database, bot_prefix, name_func, permission):
         Funct.__init__(self, discord_client=discord_client, bot_prefix=bot_prefix,
                        name_func=name_func, permission=permission)
 
         self.database = database
-        self.game_data = game_data
 
         # self.helper = DiscordHelper(discord_client=self.discord_client)
         # self.packHandler = PackHandler(stored_info=self.database,
@@ -108,23 +56,29 @@ class PackFunct(Funct):
         self.pack_channel = "gotc-tips-packs"
 
         # self._set_only_vip()
-        self._register_fun(prefix="list", fun=self._packlist,
-                           desc="List all packs in database")
-        self._register_fun(prefix="search", fun=self._search,
-                           desc="Search a speficic pack")
+        self._register_fun(prefix="test", fun=self._display,
+                           desc="Just display a test")
+        # self._register_fun(prefix="search", fun=self._search,
+        #                    desc="Search a speficic pack")
+        #
+        # self._register_fun_adminonly(prefix="new packs", fun=self._newpacks,
+        #                    desc="Add new packs in one single csv (one pack per column)")
+        # self._register_fun_adminonly(prefix="newpack", fun=self._newpack,
+        #                    desc="Add a single pack, and broadcast it")
 
-        self._register_fun_adminonly(prefix="new packs", fun=self._newpacks,
-                           desc="Add new packs in one single csv (one pack per column)")
-        self._register_fun_adminonly(prefix="newpack", fun=self._newpack,
-                           desc="Add a single pack, and broadcast it")
-        self._register_fun_adminonly(prefix="_clean_all_packs", fun=self._clean_all_packs,
-                           desc="Remove all the packs from the database")
-        self._register_fun_adminonly(prefix="_insert_packs", fun=self._insert_packs,
-                           desc="Insert all packs from a directory (local to the host machine)")
-        self._register_fun_adminonly(prefix="_packs_from_zip", fun=self._packs_from_zip,
-                           desc="Add packs from image in a zip")
-        self._register_fun_adminonly(prefix="deactivate", fun=self._deactivate,
-                           desc="Deactivate a pack (remove it from the list) but people might still use search to find it")
+    async def _display(self, message, msg_str, cmd) -> None:
+        cards = Cards(message.author.id,
+                      "Where is test ?",
+                      "Not here",
+                      "Here",
+                      "Not there",
+                      ans_correct=B)
+        emb = self.embed_from_dict(cards.dict_embed())
+        msg_check = await self.discord_client.send_message(message.channel, embed=emb)
+        msg_check = msg_check[-1]
+
+        for id_em in sorted(emojis.keys()):
+            await self.discord_client.add_reaction(msg_check, emojis[id_em])
 
     # base functions
     async def _packlist(self, message, msg_str, cmd) -> None:

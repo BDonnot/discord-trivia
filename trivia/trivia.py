@@ -1,5 +1,5 @@
 from builtins import Exception
-
+import matplotlib
 matplotlib.use('Agg')
 
 import datetime
@@ -12,6 +12,7 @@ import asyncio
 import json
 
 from karadoc import Funct, BotBase, BaseDataBase
+from .Funct_Trivia import FunctTrivia
 
 class TriviaDB(BaseDataBase):
     def __init__(self, app_name="got_trivia", readyness_level="test"):
@@ -19,13 +20,13 @@ class TriviaDB(BaseDataBase):
 
         # players
         self.cards_collection = self.client["{}_{}_cards".format(app_name, readyness_level)]  # self.player_database is a collection
-        self.cards = self.players_collection["cards"]  # self.players is a database
+        self.cards = self.cards_collection["cards"]  # self.players is a database
 
 
 class Trivia(BotBase):
     def __init__(self, bot_token, channel_name="got-trivia", readyness_level="test",
                  reboot_message=None, last_message_posted=None,
-                 bot_prefix="!gt", loop=None):
+                 bot_prefix="!triv", loop=None):
 
         kwargs = {"channel_name": channel_name}
         BotBase.__init__(self, bot_token=bot_token, readyness_level=readyness_level,
@@ -33,16 +34,12 @@ class Trivia(BotBase):
                          loop=loop, bot_prefix=bot_prefix, kwargs_funct=kwargs,
                          DatabaseClass=TriviaDB)
 
-    def _init_functionnalities(self, **kwargs):
+    def _init_functionnalities(self, kwargs):
         channel_name = kwargs["channel_name"]
-        auth_twitter = kwargs["auth_twitter"]
-        self.channel_name = channel_name
-        self.game_data = GameData(path=pkg_resources.resource_filename(__name__, 'data'))
+        self.funct_trivia = FunctTrivia(discord_client=self.discord_client,
+                                        database=self.database,
+                                        bot_prefix=self.bot_prefix,
+                                        name_func="test",
+                                        permission=self.permission)
+        self._attach_func(self.funct_trivia)
 
-        self.twitter = Twitter(discord_client=self.discord_client,
-                               name_func="twitter",
-                               permission=self.permission,
-                               bot_prefix=self.bot_prefix,
-                               auth_twitter=auth_twitter,
-                               database=self.database)
-        self._attach_func(self.twitter, req_permanent_lookup=True)

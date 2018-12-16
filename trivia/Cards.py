@@ -13,27 +13,18 @@ class Card(object):
         "description": "Answer the question bellow:",
         "color": 14090240,
             "fields": [ {
-        "name": "**__Question__**",
+        "name": "Question",
         "value": "{}",
                 "inline": False
             }, {
-        "name": "Answer {}",
-        "value": "{}",
-        "inline": False
-            },
-            {
-        "name": "Answer {}",
-        "value": "{}",
-        "inline": False
-            },
-            {
-        "name": "Answer {}",
-        "value": "{}\n_ _",
+        "name": "Answers:",
+        "value": "\t - {} \t {}\n\t - {} \t {}\n\t - {} \t {}",
         "inline": False
             }]
             }
 
-    def __init__(self, id_player, question, ans_a, ans_b, ans_c, ans_correct,
+    def __init__(self, id_player, question,
+                 ans_a, ans_b, ans_c, ans_correct,
                  season, difficulty, category="from_game"):
         self.id_player = id_player
         self.question = question
@@ -57,16 +48,21 @@ class Card(object):
             raise RuntimeError("Unknown correct answer")
         return res
 
-    def from_dict(self, dict_mongo):
-        self.id_player = dict_mongo["id_player"]
-        self.question = dict_mongo["question"]
-        self.ans_a = dict_mongo["ans_a"]
-        self.ans_b = dict_mongo["ans_b"]
-        self.ans_c = dict_mongo["ans_c"]
-        self.ans_correct = self._correct_ans(dict_mongo["ans_correct"])
-        self.season = int(dict_mongo["season"])
-        self.difficulty = int(dict_mongo["difficulty"])
-        self.category = dict_mongo["category"]
+    @staticmethod
+    def from_dict(dict_mongo):
+        res = Card(id_player="", question="",
+                 ans_a="", ans_b="", ans_c="", ans_correct="",
+                 season=0, difficulty=EASY, category="from_game")
+        res.id_player = dict_mongo["id_player"]
+        res.question = dict_mongo["question"]
+        res.ans_a = dict_mongo["ans_a"]
+        res.ans_b = dict_mongo["ans_b"]
+        res.ans_c = dict_mongo["ans_c"]
+        res.ans_correct = res._correct_ans(dict_mongo["ans_correct"])
+        res.season = int(dict_mongo["season"])
+        res.difficulty = int(dict_mongo["difficulty"])
+        res.category = dict_mongo["category"]
+        return res
 
     def to_dict(self):
         dict_mongo = {}
@@ -105,14 +101,18 @@ class Card(object):
     def dict_embed(self):
         res = copy.deepcopy(self.pack_list_dict)
         res["fields"][0]["value"] = res["fields"][0]["value"].format(self.question)
-        res["fields"][1]["value"] = res["fields"][1]["value"].format(self.ans_a)
-        res["fields"][2]["value"] = res["fields"][2]["value"].format(self.ans_b)
-        res["fields"][3]["value"] = res["fields"][3]["value"].format(self.ans_c)
-
-        res["fields"][1]["name"] = res["fields"][1]["name"].format(emojis[A])
-        res["fields"][2]["name"] = res["fields"][2]["name"].format(emojis[B])
-        res["fields"][3]["name"] = res["fields"][3]["name"].format(emojis[C])
-
+        tmp = res["fields"][1]["value"]
+        res["fields"][1]["value"] = tmp.format(emojis[A], self.ans_a,
+                                               emojis[B], self.ans_b,
+                                               emojis[C], self.ans_c)
+        # res["fields"][1]["value"] = res["fields"][1]["value"].format(self.ans_a)
+        # res["fields"][2]["value"] = res["fields"][2]["value"].format(self.ans_b)
+        # res["fields"][3]["value"] = res["fields"][3]["value"].format(self.ans_c)
+        #
+        # res["fields"][1]["name"] = res["fields"][1]["name"].format(emojis[A])
+        # res["fields"][2]["name"] = res["fields"][2]["name"].format(emojis[B])
+        # res["fields"][3]["name"] = res["fields"][3]["name"].format(emojis[C])
+        #
         return res
 
     def save_mongo(self, database):

@@ -57,7 +57,7 @@ class FunctTrivia(Funct):
         #                                game_data=self.game_data,
         #                                permission=permission)
         # self.pack_from_img = PackFromIMG(game_data=self.game_data, packs_database=self.database.packs)
-        self.pack_channel = "gotc-tips-packs"
+        self.pack_channel = "trivia"
 
         # self._set_only_vip()
         self._register_fun(prefix="test", fun=self._display,
@@ -66,6 +66,7 @@ class FunctTrivia(Funct):
                            desc="Add a new card, by answering question")
         self._register_fun(prefix="fileadd", fun=self._from_file,
                            desc="Add a new card, by providing a file")
+
         # self._register_fun(prefix="search", fun=self._search,
         #                    desc="Search a speficic pack")
         #
@@ -74,6 +75,9 @@ class FunctTrivia(Funct):
         # self._register_fun_adminonly(prefix="newpack", fun=self._newpack,
         #                    desc="Add a single pack, and broadcast it")
 
+    async def _start(self, message, msg_str, cmd) -> None:
+
+        pass
     async def _display(self, message, msg_str, cmd) -> None:
         card = Card(message.author.id,
                       "Where is test ?",

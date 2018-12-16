@@ -130,7 +130,13 @@ class Game(object):
         self.init = False
         self.init_me()
 
-    def start_round(self):
+    async def start_round(self):
+        # choose a cards from the deck
+        # set send it to the main channel
+        # send it in pm to each player
+        # update message in main when people played
+        # count results and winners of the game
+        pass
 
 
 

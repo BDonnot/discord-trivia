@@ -5,6 +5,10 @@ import copy
 import asyncio
 import numpy as np
 from karadoc import Funct
+import json
+
+import aiohttp
+from io import BytesIO, StringIO, TextIOWrapper
 
 from .Cards import Card, A, B, C, emojis, EASY, HARD
 # from .DiscordHelper import DiscordHelper
@@ -59,7 +63,9 @@ class FunctTrivia(Funct):
         self._register_fun(prefix="test", fun=self._display,
                            desc="Just display a test")
         self._register_fun(prefix="add", fun=self._newcard,
-                           desc="Add a new card")
+                           desc="Add a new card, by answering question")
+        self._register_fun(prefix="fileadd", fun=self._from_file,
+                           desc="Add a new card, by providing a file")
         # self._register_fun(prefix="search", fun=self._search,
         #                    desc="Search a speficic pack")
         #
@@ -84,8 +90,41 @@ class FunctTrivia(Funct):
         for id_em in sorted(emojis.keys()):
             await self.discord_client.add_reaction(msg_check, emojis[id_em])
 
+    async def _from_file(self, message, msg_str, cmd) -> None:
+        file_ = {}
+        if message.attachments:
+            # there is a json already attached to it
+            file_ = message.attachments[0]
+        else:
+            await self.discord_client.send_message(message.channel, "You ask to enter a new card, please check your dm")
+            await self.discord_client.send_file(message.author, os.path.join(pkg_resources.resource_filename(__name__, 'data'),
+                                                                   "card_example.json"))
+            await self.discord_client.send_message(message.author, "Please modify the file \"card_example.json\", and send it back to us")
+            as_attach = False
+            while not as_attach:
+                ans = await self.discord_client.wait_for_message(author=message.author)
+                if ans.attachments:
+                    as_attach = True
+                    file_ = ans.attachments[0]
+                else:
+                    await self.discord_client.send_message(message.channel,
+                                                           "Please modify the file \"card_example.json\", and send it back to us")
+
+        async with aiohttp.ClientSession() as session:
+            # note that it is often preferable to create a single session to use multiple times later - see below for this.
+            async with session.get(file_['url']) as resp:
+                buffer = BytesIO(await resp.read())
+        # pdb.set_trace()
+        # with open(buffer, "r") as f:
+        #     dict_ = json.load(f)
+        dict_ = json.load(TextIOWrapper(buffer, encoding='utf-8'))
+        dict_["id_player"] = message.author.id
+        dict_["category"] = "from_game"
+        card = Card(**dict_)
+        await self.__confirm_card(card, message)
+
     async def _newcard(self, message, msg_str, cmd) -> None:
-        await self.discord_client.send_message(message.channel, "You ask to enter a new cards, please check your dm")
+        await self.discord_client.send_message(message.channel, "You ask to enter a new card, please check your dm")
         await self.discord_client.send_message(message.author, "Please provide the question")
         question = await self.discord_client.wait_for_message(author=message.author)
         await self.discord_client.send_message(message.author, "Please provide the possible answer a")
@@ -132,11 +171,15 @@ class FunctTrivia(Funct):
                     ans_correct=ans_correct.content,
                     season=season,
                     difficulty=difficulty)
+        await self.__confirm_card(card, message)
+
+    async def __confirm_card(self, card: Card, message):
+        ans_correct = card.get_ans_correct()
         emb = self.embed_from_dict(card.dict_embed())
         message_card = await self.discord_client.send_message(message.author, embed=emb)
         message_card = message_card[-1]
-        await self.discord_client.send_message(message.author, "Answer is {}".format(ans_correct.content))
-        await self.discord_client.send_message(message.author, "Is this correct?")
+        await self.discord_client.send_message(message.author, "{}".format(ans_correct))
+        await self.discord_client.send_message(message.author, "Is this card correct?")
         while 1:
             ok_ = await self._check_if_ok(orig_message=message)
             if ok_ is not None:

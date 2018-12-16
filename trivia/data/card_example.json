@@ -1,0 +1,9 @@
+{
+	"question": "Do you mind putting the question here?",
+	"ans_a": "this is anwer a",
+	"ans_b": "this is answer b",
+	"ans_c": "this is answer c",
+	"ans_correct" : "a, b or c",
+	"season": "an integer",
+	"difficulty" : "easy or hard"
+}

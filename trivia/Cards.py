@@ -45,6 +45,18 @@ class Card(object):
         self.difficulty = difficulty
         self.category = category
 
+    def get_ans_correct(self):
+        res = "The correct answer is {} - {}"
+        if self.ans_correct == A:
+            res = res.format(emojis[A], self.ans_a)
+        elif self.ans_correct == B:
+            res = res.format(emojis[B], self.ans_b)
+        elif self.ans_correct == C:
+            res = res.format(emojis[C], self.ans_c)
+        else:
+            raise RuntimeError("Unknown correct answer")
+        return res
+
     def from_dict(self, dict_mongo):
         self.id_player = dict_mongo["id_player"]
         self.question = dict_mongo["question"]

@@ -10,7 +10,7 @@ import json
 import aiohttp
 from io import BytesIO, StringIO, TextIOWrapper
 
-from .Cards import Card, A, B, C, emojis, EASY, HARD
+from .Cards import Card, A, B, C, EMOJIS, EASY, HARD
 # from .DiscordHelper import DiscordHelper
 
 # from .Packs import PackHandler, Pack
@@ -91,8 +91,8 @@ class FunctTrivia(Funct):
         msg_check = await self.discord_client.send_message(message.channel, embed=emb)
         msg_check = msg_check[-1]
 
-        for id_em in sorted(emojis.keys()):
-            await self.discord_client.add_reaction(msg_check, emojis[id_em])
+        for id_em in sorted(EMOJIS.keys()):
+            await self.discord_client.add_reaction(msg_check, EMOJIS[id_em])
 
     async def _from_file(self, message, msg_str, cmd) -> None:
         file_ = {}

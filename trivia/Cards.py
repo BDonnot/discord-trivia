@@ -3,9 +3,13 @@ import copy
 A = 0
 B = 1
 C = 2
-emojis = {A:"🇦", B: "🇧", C: "🇨"}
+EMOJIS = {A: "🇦", B: "🇧", C: "🇨"}
+
 EASY = 0
 HARD = 1
+
+ANSWERS = {val: key for key, val in EMOJIS.items()}
+
 
 class Card(object):
     pack_list_dict = {
@@ -39,11 +43,11 @@ class Card(object):
     def get_ans_correct(self):
         res = "The correct answer is {} - {}"
         if self.ans_correct == A:
-            res = res.format(emojis[A], self.ans_a)
+            res = res.format(EMOJIS[A], self.ans_a)
         elif self.ans_correct == B:
-            res = res.format(emojis[B], self.ans_b)
+            res = res.format(EMOJIS[B], self.ans_b)
         elif self.ans_correct == C:
-            res = res.format(emojis[C], self.ans_c)
+            res = res.format(EMOJIS[C], self.ans_c)
         else:
             raise RuntimeError("Unknown correct answer")
         return res
@@ -79,7 +83,7 @@ class Card(object):
 
     def _correct_ans(self, ans):
         if isinstance(ans, int):
-            if ans in emojis:
+            if ans in EMOJIS:
                 return ans
             else:
                 raise RuntimeError("Answer \"{}\" not valid. Please enter one of a, b or c".format(ans))
@@ -102,9 +106,9 @@ class Card(object):
         res = copy.deepcopy(self.pack_list_dict)
         res["fields"][0]["value"] = res["fields"][0]["value"].format(self.question)
         tmp = res["fields"][1]["value"]
-        res["fields"][1]["value"] = tmp.format(emojis[A], self.ans_a,
-                                               emojis[B], self.ans_b,
-                                               emojis[C], self.ans_c)
+        res["fields"][1]["value"] = tmp.format(EMOJIS[A], self.ans_a,
+                                               EMOJIS[B], self.ans_b,
+                                               EMOJIS[C], self.ans_c)
         # res["fields"][1]["value"] = res["fields"][1]["value"].format(self.ans_a)
         # res["fields"][2]["value"] = res["fields"][2]["value"].format(self.ans_b)
         # res["fields"][3]["value"] = res["fields"][3]["value"].format(self.ans_c)

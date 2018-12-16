@@ -4,7 +4,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from .Cards import Card, emojis
+from .Cards import Card, EMOJIS, ANSWERS
 import datetime
 
 class Player(object):
@@ -33,23 +33,39 @@ class Player(object):
                                                     embed=cards_emb)
         msg_check = message[-1]
         emoji = "✅"
-        for id_em in sorted(emojis.keys()):
-            await discord_client.add_reaction(msg_check, emojis[id_em])
+        for id_em in sorted(EMOJIS.keys()):
+            await discord_client.add_reaction(msg_check, EMOJIS[id_em])
+        await discord_client.add_reaction(msg_check, emoji)
         beginning_ts = datetime.datetime.now()
         # for i in range(timeout):
         another_one = True
         one_sec = datetime.timedelta(seconds=1)
         next_time = beginning_ts + one_sec
         nb_sec = 1
+        answer = None
         while another_one and nb_sec <= timeout:
             msg_check = await discord_client.get_message(msg_check.channel, msg_check.id)
             counts = {react.emoji: react for react in msg_check.reactions}
             if emoji in counts:
                 react_ = counts[emoji]
                 if react_.count >= 2:
+                    need_break = False
                     # await discord_client.delete_message(msg_check)
-                    
-                    break
+                    for em in EMOJIS.values():
+                        if em in counts:
+                            if counts[em].count >= 2:
+                                if answer is None:
+                                    answer = ANSWERS[em]
+                                    need_break = True
+                                else:
+                                    need_break = False
+                                    await discord_client.send_message(self.user,
+                                                                      content="Please choose only one anwser")
+                    if answer is None:
+                        await discord_client.send_message(self.user,
+                                                          content="Please choose at least one anwser")
+                    if need_break:
+                        break
             await discord_client.edit_message(msg_check,
                                               format_timeout.format(timeout-nb_sec, emoji),
                                               embed=cards_emb)
@@ -58,10 +74,14 @@ class Player(object):
             while beginning_ts + nb_sec*one_sec <= curr_time:
                 nb_sec += 1
             next_time = beginning_ts + one_sec
-            await asyncio.sleep(beginning_ts + nb_sec*one_sec - curr_time)
-
-
-
+            tmp_ = beginning_ts + nb_sec*one_sec - curr_time
+            await asyncio.sleep(tmp_.total_seconds())
+        if answer is not None:
+            await discord_client.send_message(self.user,
+                                              content="You choose anwser {}".format(EMOJIS[answer]))
+        else:
+            await discord_client.send_message(self.user,
+                                              content="Timeout, you didn't choose any answer :-/")
 
 
 class Game(object):
@@ -92,7 +112,7 @@ class Game(object):
             self.database.update_one({'_id': self.id_mongo}, {"$set": dict_})
 
     def init_me(self):
-        self.deck = self.database.cards.find(self.cards_criteria)
+        self.deck = list(self.database.cards.find(self.cards_criteria))
         self.init = True
 
     def to_dict(self):
@@ -109,6 +129,8 @@ class Game(object):
         self.id_mongo = dict_mongo["_id"]
         self.init = False
         self.init_me()
+
+    def start_round(self):
 
 
 

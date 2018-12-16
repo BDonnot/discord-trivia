@@ -73,8 +73,8 @@ class Player(object):
             curr_time = datetime.datetime.now()
             while beginning_ts + nb_sec*one_sec <= curr_time:
                 nb_sec += 1
-            next_time = beginning_ts + one_sec
-            tmp_ = beginning_ts + nb_sec*one_sec - curr_time
+            next_time = beginning_ts + nb_sec* one_sec
+            tmp_ = next_time - curr_time
             await asyncio.sleep(tmp_.total_seconds())
         if answer is not None:
             await discord_client.send_message(self.user,

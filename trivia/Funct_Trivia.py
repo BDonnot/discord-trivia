@@ -11,6 +11,7 @@ import aiohttp
 from io import BytesIO, StringIO, TextIOWrapper
 
 from .Cards import Card, A, B, C, EMOJIS, EASY, HARD
+from .Game import Game
 # from .DiscordHelper import DiscordHelper
 
 # from .Packs import PackHandler, Pack
@@ -51,7 +52,7 @@ class FunctTrivia(Funct):
                        name_func=name_func, permission=permission)
 
         self.database = database
-
+        self.dict_game = {}
         # self.helper = DiscordHelper(discord_client=self.discord_client)
         # self.packHandler = PackHandler(stored_info=self.database,
         #                                game_data=self.game_data,
@@ -67,6 +68,12 @@ class FunctTrivia(Funct):
         self._register_fun(prefix="fileadd", fun=self._from_file,
                            desc="Add a new card, by providing a file")
 
+        self._register_fun(prefix="start", fun=self._start,
+                           desc="Start a nex game")
+        self._register_fun(prefix="join", fun=self._register,
+                           desc="Join a game already started")
+        self._register_fun(prefix="next", fun=self._next,
+                           desc="Start the next round")
         # self._register_fun(prefix="search", fun=self._search,
         #                    desc="Search a speficic pack")
         #
@@ -76,8 +83,25 @@ class FunctTrivia(Funct):
         #                    desc="Add a single pack, and broadcast it")
 
     async def _start(self, message, msg_str, cmd) -> None:
+        if message.channel.id in self.dict_game:
+            await self.discord_client.send_message(message.channel, "And game has already started in this channel. Type `!trivia join` to join it.")
+        else:
+            game = Game(self.database)
+            await game.start_game(self.discord_client, message.channel)
+            self.dict_game[message.channel.id] = game
 
-        pass
+    async def _register(self, message, msg_str, cmd) -> None:
+        if message.channel.id in self.dict_game:
+            self.dict_game[message.channel.id].add_player(message.author.id)
+        else:
+            await self.discord_client.send_message(message.channel, "No game has started on this channel. Type `!trivia start` to start one.")
+
+    async def _next(self, message, msg_str, cmd) -> None:
+        if message.channel.id in self.dict_game:
+            await self.dict_game[message.channel.id].start_round(self.discord_client, message.channel)
+        else:
+            await self.discord_client.send_message(message.channel, "No game has started on this channel. Type `!trivia start` to start one, and  `!trivia join` to join it.")
+
     async def _display(self, message, msg_str, cmd) -> None:
         card = Card(message.author.id,
                       "Where is test ?",

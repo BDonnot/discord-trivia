@@ -27,7 +27,7 @@ class TriviaDB(BaseDataBase):
 class Trivia(BotBase):
     def __init__(self, bot_token, channel_name="got-trivia", readyness_level="test",
                  reboot_message=None, last_message_posted=None,
-                 bot_prefix="!triv", loop=None):
+                 bot_prefix="!trivia", loop=None):
 
         kwargs = {"channel_name": channel_name}
         BotBase.__init__(self, bot_token=bot_token, readyness_level=readyness_level,
@@ -40,7 +40,8 @@ class Trivia(BotBase):
         self.funct_trivia = FunctTrivia(discord_client=self.discord_client,
                                         database=self.database,
                                         bot_prefix=self.bot_prefix,
-                                        name_func="test",
+                                        name_func="",
+                                        link="",
                                         permission=self.permission)
         self._attach_func(self.funct_trivia)
 

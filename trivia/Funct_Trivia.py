@@ -49,7 +49,7 @@ class FunctTrivia(Funct):
 
     def __init__(self, discord_client, database, bot_prefix, name_func, permission):
         Funct.__init__(self, discord_client=discord_client, bot_prefix=bot_prefix,
-                       name_func=name_func, permission=permission)
+                       name_func=name_func, permission=permission, link="")
 
         self.database = database
         self.dict_game = {}

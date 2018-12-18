@@ -41,7 +41,6 @@ class Trivia(BotBase):
                                         database=self.database,
                                         bot_prefix=self.bot_prefix,
                                         name_func="",
-                                        link="",
                                         permission=self.permission)
         self._attach_func(self.funct_trivia)
 

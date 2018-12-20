@@ -174,8 +174,11 @@ class Game(object):
         self.embed_card = None
         self.lock = False
 
+    def is_player(self, player_id):
+        return player_id in self.all_ids
+
     def add_player(self, player_id):
-        if player_id in self.all_ids:
+        if self.is_player(player_id):
             return False
         tmp = Player(id_discord=player_id)
         self.player_tmp.append(tmp)

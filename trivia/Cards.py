@@ -41,6 +41,21 @@ class Card(object):
         self.difficulty = difficulty
         self.category = category
 
+    def _get_difficulty(self, difficulty):
+        if isinstance(difficulty, str):
+            if difficulty[:2] == "ea":
+                difficulty = EASY
+            elif difficulty[:2] == "ha":
+                difficulty = HARD
+            else:
+                raise RuntimeError("Unknown difficulty \"{}\"".format(difficulty))
+        elif isinstance(difficulty, int):
+            if difficulty != EASY and difficulty != HARD:
+                raise RuntimeError("Unknown difficulty \"{}\"".format(difficulty))
+        else:
+                raise RuntimeError("Unknown difficulty \"{}\" of type {}".format(difficulty, type(difficulty)))
+        return difficulty
+
     def get_ans_correct(self):
         res = "The correct answer is {} - {}"
         if self.ans_correct == A:

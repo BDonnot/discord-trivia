@@ -122,7 +122,11 @@ class FunctTrivia(Funct):
                 msg = "Impossible to start a new round while a round is still in progress."
                 await self.discord_client.send_message(message.channel, msg)
             else:
-                await game.start_round(self.discord_client, message.channel)
+                if game.is_player(message.author.id):
+                    await game.start_round(self.discord_client, message.channel)
+                else:
+                    ans = "You are not part of this game. Type `!trivia join` to join it."
+                    await self.discord_client.send_message(message.channel, ans)
         else:
             await self.discord_client.send_message(message.channel, "No game has started on this channel. Type `!trivia start` to start one, and  `!trivia join` to join it.")
 

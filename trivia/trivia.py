@@ -14,6 +14,9 @@ import json
 from karadoc import Funct, BotBase, BaseDataBase
 from .Funct_Trivia import FunctTrivia
 
+import pdb
+
+
 class TriviaDB(BaseDataBase):
     def __init__(self, app_name="got_trivia", readyness_level="test"):
         BaseDataBase.__init__(self, app_name=app_name)
@@ -21,7 +24,8 @@ class TriviaDB(BaseDataBase):
         # players
         self.cards_collection = self.client["{}_{}_cards".format(app_name, readyness_level)]  # self.player_database is a collection
         self.cards = self.cards_collection["cards"]  # self.players is a database
-        self.games = self.cards_collection["cards"]  # self.players is a database
+        self.games = self.cards_collection["games"]  # self.players is a database
+        # pdb.set_trace()
 
 
 class Trivia(BotBase):

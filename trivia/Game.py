@@ -15,8 +15,8 @@ class Player(object):
     one_sec = datetime.timedelta(seconds=1)
     timeout = 120
     def __init__(self, id_discord):
-        self.id_discord = None
-        self.user = None
+        self.id_discord = id_discord
+        self.user = discord.User(id=id_discord)
         self.emoji = "✅"
         self.format_timeout = "React on the emoji to choose an answer. When you are sure validate with ✅"
         self.format_timeout += "{} s left to play"
@@ -32,12 +32,14 @@ class Player(object):
     def from_dict(dict_mongo):
         res = Player(id_discord=None)
         res.id_discord = dict_mongo["id_discord"]
+        res.total_point = dict_mongo["total_point"]
         res.user = discord.User(id=res.id_discord)
         return res
 
     def to_dict(self):
         res = {}
         res["id_discord"] = self.id_discord
+        res["total_point"] = self.total_point
         return res
 
     def set_point(self, correct_answer):
@@ -158,6 +160,7 @@ class Game(object):
         self.database = database
         self.players = []
         self.player_tmp = []
+        self.all_ids = set()
         self.cards_criteria = {}  # used to choose the cards to play, note that reloading a game would probably change
         self.id_mongo = None
         # the cards in the deck
@@ -169,23 +172,29 @@ class Game(object):
         self.message_game = None
         self.main_message_text = None
         self.embed_card = None
+        self.lock = False
 
     def add_player(self, player_id):
+        if player_id in self.all_ids:
+            return False
         tmp = Player(id_discord=player_id)
         self.player_tmp.append(tmp)
+        self.all_ids.add(player_id)
         self.save()
+        return True
 
     def _integrate_new_players(self):
         self.players += self.player_tmp
         self.player_tmp = []
+        self.lock = True
 
     def save(self):
         dict_ = self.to_dict()
         if self.id_mongo is None:
-            tmp = self.database.insert(dict_)
-            self.id_mongo = tmp.id
+            tmp = self.database.games.insert(dict_)
+            self.id_mongo = tmp
         else:
-            self.database.update_one({'_id': self.id_mongo}, {"$set": dict_})
+            self.database.games.update_one({'_id': self.id_mongo}, {"$set": dict_})
 
     def init_me(self):
         self.deck = list(self.database.cards.find(self.cards_criteria))
@@ -205,6 +214,10 @@ class Game(object):
         self.id_mongo = dict_mongo["_id"]
         self.init = False
         self.init_me()
+        self.all_ids = {el.id_discord for el in self.players}
+
+    def is_locked(self):
+        return self.lock
 
     async def start_game(self, discord_client, channel):
         self.init_me()
@@ -212,12 +225,26 @@ class Game(object):
         self.current_card_id = 0
         # await self.start_round(discord_client, channel)
 
+    async def end_game(self, discord_client, channel):
+        # count results and winners of the game
+        content_ = "Global results are: "
+        tmp = ["\t - <@!{}>: {} point(s)".format(el.id_discord, el.total_point) for el in
+               sorted(self.players, key=lambda p: p.total_point, reverse=True)]
+        content_ += '\n{}'.format("\n".join(tmp))
+        self.save()
+        # self.players = []
+        # self.player_tmp = []
+        await discord_client.send_message(channel,
+                                          content=content_)
+
     async def start_round(self, discord_client, channel):
+        if self.lock:
+            raise RuntimeError("Impossible to start a new round while a round is still in progress.")
         # start welcoming message
         self._integrate_new_players()
 
         content_ = "A round is about to start with {} players:".format(len(self.players))
-        tmp = ["\t - <:{}>".format(el.id_discord) for el in self.players]
+        tmp = ["\t - <@!{}>".format(el.id_discord) for el in self.players]
         content_ += '\n{}'.format("\n".join(tmp))
         self.main_message_text = content_
         self.message_game = await discord_client.send_message(channel,
@@ -225,7 +252,7 @@ class Game(object):
         self.message_game = self.message_game[-1]
 
         # choose a card from the deck
-        card = self.deck[self.current_card_id]
+        card = Card.from_dict(self.deck[self.current_card_id])
         self.embed_card = Funct.embed_from_dict(card.dict_embed())
 
         # set send it to the main channel
@@ -256,7 +283,7 @@ class Game(object):
                 await s
 
             content_ = "Round has started and counts {} players:".format(len(self.players))
-            tmp = ["\t - <:{}>: {}".format(el.id_discord, "⌛" if el.answer is None else "🤫") for el in self.players]
+            tmp = ["\t - <@!{}>: {}".format(el.id_discord, "⌛" if el.answer is None else "🤫") for el in self.players]
             content_ += '\n{}'.format("\n".join(tmp))
             self.main_message_text = content_
             self.message_game = await discord_client.edit_message(self.message_game,
@@ -272,24 +299,26 @@ class Game(object):
 
         # display winner of rounds
         content_ = "Round has ended. Results are: "
-        tmp = ["\t - <:{}> {}: {}".format(el.id_discord, EMOJIS[el.answer], "😀" if el.answer == card.ans_correct else "😔") for el in self.players]
+        tmp = ["\t - <@!{}> {}: {}".format(el.id_discord, EMOJIS[el.answer], "😀" if el.answer == card.ans_correct else "😔") for el in self.players]
         content_ += '\n{}'.format("\n".join(tmp))
         await discord_client.edit_message(self.message_game,
                                           content_,
                                           embed=self.embed_card)
-        self.main_message_text = None
-        self.message_game = None
 
         # count results and winners of the game
         for p in self.players:
             p.set_point(card.ans_correct)
 
         content_ = "Global results are: "
-        tmp = ["\t - <:{}>: {}".format(el.id_discord, el.total_point) for el in self.players]
+        tmp = ["\t - <@!{}>: {}".format(el.id_discord, el.total_point) for el in self.players]
         content_ += '\n{}'.format("\n".join(tmp))
         await discord_client.send_message(self.message_game.channel,
-                                          content=self.main_message_text)
+                                          content=content_)
         self.current_card_id += 1
+
+        self.main_message_text = None
+        self.message_game = None
+        self.lock = False
 
 
 

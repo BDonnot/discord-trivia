@@ -1,4 +1,5 @@
 import copy
+import pdb
 
 A = 0
 B = 1
@@ -55,7 +56,7 @@ class Card(object):
     @staticmethod
     def from_dict(dict_mongo):
         res = Card(id_player="", question="",
-                 ans_a="", ans_b="", ans_c="", ans_correct="",
+                 ans_a="", ans_b="", ans_c="", ans_correct=A,
                  season=0, difficulty=EASY, category="from_game")
         res.id_player = dict_mongo["id_player"]
         res.question = dict_mongo["question"]

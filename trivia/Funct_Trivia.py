@@ -74,6 +74,8 @@ class FunctTrivia(Funct):
                            desc="Join a game already started")
         self._register_fun(prefix="next", fun=self._next,
                            desc="Start the next round")
+        self._register_fun(prefix="end", fun=self._end_game,
+                           desc="End the game")
         # self._register_fun(prefix="search", fun=self._search,
         #                    desc="Search a speficic pack")
         #
@@ -81,6 +83,15 @@ class FunctTrivia(Funct):
         #                    desc="Add new packs in one single csv (one pack per column)")
         # self._register_fun_adminonly(prefix="newpack", fun=self._newpack,
         #                    desc="Add a single pack, and broadcast it")
+    async def _end_game(self, message, msg_str, cmd) -> None:
+        if message.channel.id in self.dict_game:
+            # await self.discord_client.send_message(message.channel, "And game has already started in this channel. Type `!trivia join` to join it.")
+            game = self.dict_game[message.channel.id]
+            await game.end_game(self.discord_client, message.channel)
+            del self.dict_game[message.channel.id]
+        else:
+            await self.discord_client.send_message(message.channel, "No game has started in this channel. Type `!trivia start` to start one.")
+        # end_game
 
     async def _start(self, message, msg_str, cmd) -> None:
         if message.channel.id in self.dict_game:
@@ -89,16 +100,29 @@ class FunctTrivia(Funct):
             game = Game(self.database)
             await game.start_game(self.discord_client, message.channel)
             self.dict_game[message.channel.id] = game
+            await self.discord_client.add_reaction(message, "✅")
+            await self.discord_client.send_message(message.channel, "Game has started. Type `!trivia join` to join it.")
 
     async def _register(self, message, msg_str, cmd) -> None:
         if message.channel.id in self.dict_game:
-            self.dict_game[message.channel.id].add_player(message.author.id)
+            if self.dict_game[message.channel.id].add_player(message.author.id):
+                await self.discord_client.add_reaction(message, "✅")
+                await self.discord_client.send_message(message.channel, "You successfuly join the game. Once everyone joined type `!trivia next` to start a round.")
+            else:
+                await self.discord_client.add_reaction(message, "❌")
+                await self.discord_client.send_message(message.channel,
+                                                       "You are already part of this game.")
         else:
             await self.discord_client.send_message(message.channel, "No game has started on this channel. Type `!trivia start` to start one.")
 
     async def _next(self, message, msg_str, cmd) -> None:
         if message.channel.id in self.dict_game:
-            await self.dict_game[message.channel.id].start_round(self.discord_client, message.channel)
+            game = self.dict_game[message.channel.id]
+            if game.is_locked():
+                msg = "Impossible to start a new round while a round is still in progress."
+                await self.discord_client.send_message(message.channel, msg)
+            else:
+                await game.start_round(self.discord_client, message.channel)
         else:
             await self.discord_client.send_message(message.channel, "No game has started on this channel. Type `!trivia start` to start one, and  `!trivia join` to join it.")
 

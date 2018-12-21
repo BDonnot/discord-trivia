@@ -23,7 +23,7 @@ class Card(object):
                 "inline": False
             }, {
         "name": "Answers:",
-        "value": "\t - {} \t {}\n\t - {} \t {}\n\t - {} \t {}",
+        "value": "- {} \t {}\n- {} \t {}\n- {} \t {}",
         "inline": False
             }]
             }
@@ -41,7 +41,8 @@ class Card(object):
         self.difficulty = difficulty
         self.category = category
 
-    def _get_difficulty(self, difficulty):
+    @staticmethod
+    def _get_difficulty(difficulty):
         if isinstance(difficulty, str):
             if difficulty[:2] == "ea":
                 difficulty = EASY
@@ -80,7 +81,7 @@ class Card(object):
         res.ans_c = dict_mongo["ans_c"]
         res.ans_correct = res._correct_ans(dict_mongo["ans_correct"])
         res.season = int(dict_mongo["season"])
-        res.difficulty = int(dict_mongo["difficulty"])
+        res.difficulty = Card._get_difficulty(dict_mongo["difficulty"])
         res.category = dict_mongo["category"]
         return res
 
